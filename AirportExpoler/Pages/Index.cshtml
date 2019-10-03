@@ -1,0 +1,173 @@
+﻿@page
+@model IndexModel
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>Airport Explorer</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <link href='https://api.mapbox.com/mapbox-gl-js/v1.3.2/mapbox-gl.css' rel='stylesheet' />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <style>
+        /*map styling*/
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+    <style>
+        /*airport popup styling*/
+        .mapboxgl-popup {
+            max-width: 400px;
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id='map'></div>
+    @*script with TailWind CSS*@
+    <div id="info-card" class="absolute pin-t pin-l mt-4 ml-4 rounded shadow-lg bg-white" style="max-width: 400px; display: none;">
+        <div class="overflow-hidden" style="height:200px;">
+            <span class="absolute pin-t pin-r px-4 py-3">
+                <i id="info-card-close-button" class="fa fa-times" role="button" aria-hidden="true"></i>
+            </span>
+            <img id="airport-image" src="http://via.placeholder.com/400x200?text=Loading..." />
+        </div>
+        <div class="px-6 py-4">
+            <div id="airport-name" class="font-bold text-l">Airport Name goes here</div>
+
+            <div id="more-info" class="mt-8">
+                <div class="flex mb-4">
+                    <div class="w-10"><i class="fa fa-map-marker" aria-hidden="true"></i></div>
+                    <div id="airport-address" class="font-medium text-l mb-2 w-full"></div>
+                </div>
+
+                <div class="flex mb-4">
+                    <div class="w-10"><i class="fa fa-phone" aria-hidden="true"></i></div>
+                    <div id="airport-phone" class="font-medium text-l mb-2 w-full"></div>
+                </div>
+
+                <div class="flex mb-4">
+                    <div class="w-10"><i class="fa fa-link" aria-hidden="true"></i></div>
+                    <div id="airport-website" class="font-medium text-l mb-2 w-full"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/v1.3.2/mapbox-gl.js'></script>
+    @*script for the map*@
+    <script>
+        mapboxgl.accessToken = '@Model.MapboxAccessToken';
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/outdoors-v10',
+            center: [
+                23.22622,
+                37.97645
+            ],
+            zoom: 5.3
+        });
+
+        //add Navigation control
+        var nav = new mapboxgl.NavigationControl();
+        map.addControl(nav, 'bottom-left');
+
+        map.on('load',
+            () => {
+                map.addSource("airports", {
+                    type: "geojson",
+                    data: "?handler=airports"
+                });
+
+                map.addLayer({
+                    id: 'airport',
+                    type: 'circle',
+                    source: 'airports',
+                    filter: ['!has', 'point_count'],
+                    paint: {
+                        'circle-color': '#1EF008',
+                        'circle-radius': 6,
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#fff'
+                    }
+                });
+
+                // Create a popup, but don't add it to the map yet.
+                var popup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: true
+                });
+
+                map.on('mouseenter', 'airport', function (e) {
+                    // Change the cursor style as a UI indicator.
+                    map.getCanvas().style.cursor = 'pointer';
+
+                    // Populate the popup and set its coordinates
+                    // based on the feature found.
+                    popup.setLngLat(e.features[0].geometry.coordinates)
+                        .setHTML(e.features[0].properties.name)
+                        .addTo(map);
+                });
+
+                map.on('mouseleave', 'airport', function () {
+                    map.getCanvas().style.cursor = '';
+                    popup.remove();
+                });
+
+
+                map.on('click', 'airport', e => {
+                    var name = e.features[0].properties.name;
+                    var iataCode = e.features[0].properties.iataCode;
+                    var lat = e.features[0].geometry.coordinates[1];
+                    var lng = e.features[0].geometry.coordinates[0];
+
+                    // Display airport info
+                    document.querySelector('#airport-name').innerText = name + " (" + iataCode + ")";
+                    document.querySelector('#airport-image').src = 'http://via.placeholder.com/400x200?text=Loading...';
+
+                    // Hide more info at first
+                    document.querySelector('#more-info').style.display = 'none';
+
+                    // Ensure the info box is visible
+                    document.querySelector('#info-card').style.display = '';
+
+                    fetch(`/?handler=airportdetail&name=${name}&latitude=${lat}&longitude=${lng}`)
+                        .then(blob => blob.json())
+                        .then(data => {
+                            // Set airport properties
+                            if (data.photo)
+                                document.querySelector('#airport-image').src = 'data:image/png;base64,' + data.photo;
+                            else
+                                document.querySelector('#airport-image').src = 'http://via.placeholder.com/400x200?text=No+Image+Found';
+                            document.querySelector('#airport-address').innerText = data.formattedAddress || '-';
+                            document.querySelector('#airport-phone').innerText = data.phoneNumber || '-';
+                            document.querySelector('#airport-website').innerText = data.website || '-';
+
+                            // display more info
+                            document.querySelector('#more-info').style.display = '';
+                        })
+                        .catch(error => {
+                            document.querySelector('#airport-image').src = 'http://via.placeholder.com/400x200?text=Error+while+loading+data';
+                        });
+                });
+
+                //close button (x) listener
+                document.querySelector('#info-card-close-button').addEventListener('click', function (event) {
+                    document.querySelector('#info-card').style.display = 'none';
+                });
+            });
+    </script>
+
+</body>
+</html>
+
