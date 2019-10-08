@@ -34,6 +34,7 @@
 </head>
 <body>
     <div id='map'></div>
+
     @*script with TailWind CSS*@
     <div id="info-card" class="absolute pin-t pin-l mt-4 ml-4 rounded shadow-lg bg-white" style="max-width: 400px; display: none;">
         <div class="overflow-hidden" style="height:200px;">
@@ -64,6 +65,8 @@
     </div>
 
     <script src='https://api.mapbox.com/mapbox-gl-js/v1.3.2/mapbox-gl.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/places.js@1.16.5"></script>
+
     @*script for the map*@
     <script>
         mapboxgl.accessToken = '@Model.MapboxAccessToken';
@@ -145,9 +148,22 @@
                             document.querySelector('#airport-image').src = 'http://via.placeholder.com/400x200?text=Error+while+loading+data';
                         });
                 });
+
                 //close button (x) listener
                 document.querySelector('#info-card-close-button').addEventListener('click', function (event) {
                     document.querySelector('#info-card').style.display = 'none';
+                });
+
+                var placesAutocomplete = places({
+                    container: document.querySelector('#address-input'),
+                    type: 'city'
+                });
+
+                placesAutocomplete.on('change', e => {
+                    map.flyTo({
+                        center: [e.suggestion.latlng.lng, e.suggestion.latlng.lat],
+                        zoom: 5.3
+                    });
                 });
             });
     </script>
