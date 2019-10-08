@@ -46,7 +46,7 @@ namespace AirportExpoler
                 });
 
                 app.UseDeveloperExceptionPage();
-                //app.UseBrowserLink();
+                app.UseBrowserLink();
             }
             else
             {

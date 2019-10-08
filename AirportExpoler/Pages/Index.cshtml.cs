@@ -6,9 +6,9 @@ using GeoJSON.Net.Geometry;
 using GoogleApi;
 using GoogleApi.Entities.Common.Enums;
 using GoogleApi.Entities.Places.Details.Request;
+using GoogleApi.Entities.Places.Details.Request.Enums;
 using GoogleApi.Entities.Places.Photos.Request;
 using GoogleApi.Entities.Places.Search.NearBy.Request;
-using MaxMind.GeoIP2;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -32,9 +32,6 @@ namespace AirportExpoler.Pages
         //this is for calling the api key from secrets.json
         public string GoogleApiKey { get; }
 
-        //public double InitialLatitude { get; set; } = 0;
-        //public double InitialLongitude { get; set; } = 0;
-        //public int InitialZoom { get; set; } = 1;
 
         public IndexModel(IConfiguration configuration,
             IHostingEnvironment hostingEnvironment)
@@ -123,7 +120,7 @@ namespace AirportExpoler.Pages
                 Key = GoogleApiKey,
                 Name = name,
                 Location = new Location(latitude, longitude),
-                Radius = 1000
+                Radius = 500
             });
 
             // If we did not get a good response, or the list of results are empty then get out of here
@@ -137,18 +134,19 @@ namespace AirportExpoler.Pages
             string photoCredit = nearbyResult.Photos?.FirstOrDefault()?.HtmlAttributions.FirstOrDefault();
 
             // Execute the details request
-            var detailsResonse = await GooglePlaces.Details.QueryAsync(new PlacesDetailsRequest
+            var detailsResponse = await GooglePlaces.Details.QueryAsync(new PlacesDetailsRequest
             {
                 Key = GoogleApiKey,
-                PlaceId = placeId
+                PlaceId = placeId,
+                Fields = FieldTypes.Formatted_Address | FieldTypes.International_Phone_Number | FieldTypes.Website,
             });
 
             // If we did not get a good response then get out of here
-            if (!detailsResonse.Status.HasValue || detailsResonse.Status.Value != Status.Ok)
+            if (!detailsResponse.Status.HasValue || detailsResponse.Status.Value != Status.Ok)
                 return new BadRequestResult();
 
             // Set the details
-            var detailsResult = detailsResonse.Result;
+            var detailsResult = detailsResponse.Result;
             airportDetail.FormattedAddress = detailsResult.FormattedAddress;
             airportDetail.PhoneNumber = detailsResult.InternationalPhoneNumber;
             airportDetail.Website = detailsResult.Website;
@@ -162,7 +160,6 @@ namespace AirportExpoler.Pages
                     PhotoReference = photoReference,
                     MaxWidth = 400
                 });
-                //buffer or photobuffer?????
                 if (photosResponse.Buffer != null)
                 {
                     airportDetail.Photo = Convert.ToBase64String(photosResponse.Buffer);
