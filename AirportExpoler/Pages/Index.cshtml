@@ -82,6 +82,7 @@
         //add Navigation control
         var nav = new mapboxgl.NavigationControl();
         map.addControl(nav, 'bottom-left');
+
         map.on('load',
             () => {
                 map.addSource("airports", {
@@ -130,14 +131,16 @@
                     document.querySelector('#more-info').style.display = 'none';
                     // Ensure the info box is visible
                     document.querySelector('#info-card').style.display = '';
+
                     fetch(`/?handler=airportdetail&name=${name}&latitude=${lat}&longitude=${lng}`)
-                        .then(blob => blob.json())
+                        .then(response => response.json())
                         .then(data => {
                             // Set airport properties
                             if (data.photo)
                                 document.querySelector('#airport-image').src = 'data:image/png;base64,' + data.photo;
                             else
                                 document.querySelector('#airport-image').src = 'http://via.placeholder.com/400x200?text=No+Image+Found';
+
                             document.querySelector('#airport-address').innerText = data.formattedAddress || '-';
                             document.querySelector('#airport-phone').innerText = data.phoneNumber || '-';
                             document.querySelector('#airport-website').innerText = data.website || '-';

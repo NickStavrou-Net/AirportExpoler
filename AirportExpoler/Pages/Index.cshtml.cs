@@ -29,10 +29,8 @@ namespace AirportExpoler.Pages
         //this property is used to remove access token from index/page
         public string MapboxAccessToken { get; }
 
-        //this is for calling the api key from secrets.json
         public string GoogleApiKey { get; }
-
-
+        
         public IndexModel(IConfiguration configuration,
             IHostingEnvironment hostingEnvironment)
         {
@@ -43,29 +41,7 @@ namespace AirportExpoler.Pages
 
         public void OnGet()
         {
-            try
-            {
-                //using (var reader = new DatabaseReader(_hostingEnvironment.WebRootPath + "\\GeoLite2-City.mmdb"))
-                //{
-                //    // Determine the IP Address of the request
-                //    var ipAddress = HttpContext.Connection.RemoteIpAddress;
-                //    // Get the city from the IP Address
-                //    var city = reader.City(ipAddress);
 
-                //    if (city?.Location?.Latitude != null && city?.Location?.Longitude != null)
-                //    {
-                //        InitialLatitude = city.Location.Latitude.Value;
-                //        InitialLongitude = city.Location.Longitude.Value;
-                //        InitialZoom = 5;
-                //    }
-                //}
-            }
-            catch (Exception)
-            {
-                // Just suppress errors. If we could not retrieve the location for whatever reason
-                // there is not reason to notify the user. We'll just simply not know their current
-                // location and won't be able to center the map on it
-            }
         }
 
         //this is the Handler <?handler=airports> to read from CSV and add dots to the map with GeoJson
@@ -92,8 +68,6 @@ namespace AirportExpoler.Pages
                 {
                     string name = reader.GetField<string>(1);
                     string iataCode = reader.GetField<string>(4);
-                    //double latitude = double.Parse(reader.GetField(6));
-                    //double longitude = double.Parse(reader.GetField(7));
                     double latitude = reader.GetField<double>(6);
                     double longitude = reader.GetField<double>(7);
 
@@ -138,7 +112,9 @@ namespace AirportExpoler.Pages
             {
                 Key = GoogleApiKey,
                 PlaceId = placeId,
-                Fields = FieldTypes.Formatted_Address | FieldTypes.International_Phone_Number | FieldTypes.Website,
+                Fields = FieldTypes.Formatted_Address | 
+                FieldTypes.International_Phone_Number | 
+                FieldTypes.Website
             });
 
             // If we did not get a good response then get out of here
